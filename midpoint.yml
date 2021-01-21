@@ -1,0 +1,94 @@
+# The playbook installs and configures midPointdev
+
+- hosts: "{{ host }}"
+  become: root
+  tasks:
+
+# Linux
+
+  - name: misc packages
+    yum:
+      name:
+# List any other misc linux packages you want to install here
+        - wget
+        - unzip
+        - python3-libsemanage
+      state: latest
+
+# This adds a line to /etc/hosts you can remove this if you handle it in another way
+  - name: hosts file
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ ansible_default_ipv4.address }} {{ ansible_fqdn }}"
+
+# Opens HTTP and HTTPS in the firewall
+  - firewalld: service=http permanent=true state=enabled immediate=yes
+  - firewalld: service=https permanent=true state=enabled immediate=yes
+
+# Uncomment this if you need to open any ports to ssh  
+#  - name: open firewall for ssh
+#    firewalld: rich_rule='rule service name="ssh" family="ipv4" source address="{{ item }}" accept' permanent=true state=enabled immediate=yes
+#    with_items:
+#    - 127.0.0.1/32
+#    - 127.0.0.2/32
+
+# Java
+  - name: install open-jdk
+    yum:
+      name:
+        - java-11-openjdk
+      state: present
+
+# Apache
+  - name: httpd packages
+    yum:
+      name:
+        - httpd
+        - mod_ssl
+      state: latest
+    tags:
+    - httpd
+    notify:
+    - httpd service restart
+
+# This will stop SELinux from preventing access to self signed certs    
+  - name: apply new SELinux to files
+    command: restorecon -iR /etc/pki/tls/
+
+# This will stop SELinux from flagging Apache    
+  - name: selinux CGI sockets
+    seboolean: name=httpd_can_network_connect state=yes persistent=yes
+
+# This command will move files/httpd.conf to the remote host and put it in the apache conf.d directory    
+  - name: httpd config davenport
+    template: src=files/httpd.conf dest=/etc/httpd/conf.d/midpoint.conf backup=yes
+    notify:
+    - httpd service restart
+    
+  - name: httpd service
+    service: name=httpd state=started enabled=true
+    tags:
+    - httpd
+
+# midPoint
+
+# This download & extract midpoint-4.2 if it doesn't exist
+  - name: Extract & Download midpoint 4.2
+    unarchive:
+      src: https://evolveum.com/download/4-2-maxwell/?wpdmdl=6971&ind=908oXfCdhNyahBQYDNtoqW3jyH2grLV0mjKNPOhqJ8da4Hq9TikdEqsGuBcrunYntYVeHhxcsHogvqa1f4nt8NpSZPZLygdA2Jc7Mlbuz9kXDM9uCu7p-qSi1je6Ueg1X3t6Ogt6Qi496HBKqA33_xt9SnygK85X0OLVUbvii8Y
+      dest: /opt/
+      remote_src: yes
+      creates: /opt/midpoint-4.2
+
+# Will move files/midpoint.service file into the systemd service directory    
+  - name: move midpoint systemd service file
+    copy:
+      src: files/midpoint.service
+      dest: /etc/systemd/system/midpoint.service
+      
+  - name: midpoint service
+    service: name=midpoint.service state=started enabled=true
+    
+  handlers:
+    - name: httpd service restart
+      service: name=httpd state=restarted

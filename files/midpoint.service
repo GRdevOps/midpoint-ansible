@@ -1,0 +1,12 @@
+[Unit]
+Description=MidPoint Standalone Service
+###Requires=postgresql.service
+###After=postgresql.service
+[Service]
+User=root
+WorkingDirectory=/opt/midpoint-4.2
+ExecStart=/usr/bin/java -Xmx2048m -Dmidpoint.home=/opt/midpoint-4.2/var -jar /opt/midpoint-4.2/lib/midpoint.war
+SuccessExitStatus=143
+###TimeoutStopSec=120s
+[Install]
+WantedBy=multi-user.target
