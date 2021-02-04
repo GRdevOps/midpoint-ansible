@@ -83,6 +83,7 @@
       comment: midpoint service account
       shell: /sbin/nologin
       system: yes
+    when: service_account != 'root'
 
 # This download & extract midpoint if it doesn't exist
   - name: Extract & Download midpoint
