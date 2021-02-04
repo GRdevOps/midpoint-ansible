@@ -76,6 +76,14 @@
 
 # midPoint
 
+# Creates service account for midpoint to run as
+  - name: creates service account
+    user:
+      name: "{{ service_account }}"
+      comment: midpoint service account
+      shell: /sbin/nologin
+      system: yes
+
 # This download & extract midpoint if it doesn't exist
   - name: Extract & Download midpoint
     unarchive:
@@ -83,6 +91,8 @@
       dest: /opt/
       remote_src: yes
       creates: "/opt/midpoint-{{ midpoint_version }}"
+      owner: "{{ service_account }}"
+      group: "{{ service_account }}"
 
 # This will create midpoint.service file using the template
   - name: Create systemd service file from template

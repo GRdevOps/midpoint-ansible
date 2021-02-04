@@ -2,3 +2,4 @@
 openjdk_package: java-11-openjdk
 midpoint_url: https://evolveum.com/download/4-2-maxwell/?wpdmdl=6971&ind=908oXfCdhNyahBQYDNtoqW3jyH2grLV0mjKNPOhqJ8da4Hq9TikdEqsGuBcrunYntYVeHhxcsHogvqa1f4nt8NpSZPZLygdA2Jc7Mlbuz9kXDM9uCu7p-qSi1je6Ueg1X3t6Ogt6Qi496HBKqA33_xt9SnygK85X0OLVUbvii8Y
 midpoint_version: 4.2
+service_account: midpoint
