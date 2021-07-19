@@ -1,0 +1,96 @@
+#The playbook installs and configures postgresql for midpoint
+
+- hosts: "{{ host }}"
+  become: root
+  vars_files:
+    - files/vars.yml
+  tasks:
+
+##### Linux #####
+
+  - name: misc packages
+    yum:
+      name:
+        - wget
+        - unzip
+        - epel-release
+        - python3-psycopg2
+      state: latest
+
+  - name: hosts file
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ ansible_default_ipv4.address }} {{ ansible_fqdn }}"
+
+##### Postgresql #####
+
+  - name: Install postgresql
+    yum:
+      name:
+        - "@postgresql:{{ postgres_vs }}"
+        - postgresql-contrib
+
+  - name: Has Postgresql been init
+    ansible.builtin.stat:
+      path: /var/lib/pgsql/data/pg_hba.conf
+    register: pg_config
+      
+  - name: Init postgresql
+    command: postgresql-setup --initdb --unit postgresql
+    when: not pg_config.stat.exists
+    
+  - name: postgresql service
+    service: name=postgresql state=started enabled=true
+   
+  - name: open firewall for postgresql
+    firewalld:
+      rich_rule: "rule family=ipv4 source address={{ item }} service name=postgresql accept"
+      permanent: true
+      state: enabled
+      immediate: yes
+    with_items:
+      - "{{ firewall_Vlans }}"
+
+  - name: Copy postgresql.conf
+    template:
+      src: files/postgresql.conf
+      dest: /var/lib/pgsql/data/postgresql.conf
+      force: yes
+    notify:
+    - postgresql service restart
+      
+  - name: Copy pg_hba.conf
+    template:
+      src: files/pg_hba.conf
+      dest: /var/lib/pgsql/data/pg_hba.conf
+      force: yes
+    notify:
+    - postgresql service restart
+  
+# Postgresql DB init
+    
+  - name: "Create db user"
+    postgresql_user:
+      state: present
+      name: "{{ db_user }}"
+      password: "{{ db_userPassword }}"
+      role_attr_flags: SUPERUSER
+    become: yes
+    become_user: postgres
+      
+  - name: "Create midpoint database"
+    postgresql_db:
+      state: present
+      name: "{{ db_name }}"
+      owner: "{{ db_user }}"
+      encoding: UTF-8
+      lc_collate: en_US.UTF-8
+      lc_ctype: en_US.UTF-8
+    become: yes
+    become_user: postgres
+  
+##### Handlers ######
+
+  handlers:
+    - name: postgresql service restart
+      service: name=postgresql state=restarted

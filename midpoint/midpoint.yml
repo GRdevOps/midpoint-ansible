@@ -6,42 +6,41 @@
     - files/vars.yml
   tasks:
 
-# Linux
+##### Linux ######
 
   - name: misc packages
     yum:
       name:
-# List any other misc linux packages you want to install here
         - wget
         - unzip
         - python3-libsemanage
       state: latest
 
-# This adds a line to /etc/hosts you can remove this if you handle it in another way
   - name: hosts file
     lineinfile:
       dest: /etc/hosts
       line: "{{ ansible_default_ipv4.address }} {{ ansible_fqdn }}"
 
-# Opens HTTP and HTTPS in the firewall
-  - firewalld: service=http permanent=true state=enabled immediate=yes
-  - firewalld: service=https permanent=true state=enabled immediate=yes
+  - name: open firewall to http(s)
+    firewalld: 
+      service: "{{ item }}"
+      permanent: true
+      state: enabled
+      immediate: yes
+    with_items:
+    - http
+    - https
 
-# Uncomment this if you need to open any ports to ssh  
-#  - name: open firewall for ssh
-#    firewalld: rich_rule='rule service name="ssh" family="ipv4" source address="{{ item }}" accept' permanent=true state=enabled immediate=yes
-#    with_items:
-#    - 127.0.0.1/32
-#    - 127.0.0.2/32
+##### Java #####
 
-# Java
   - name: install open-jdk
     yum:
       name:
         - "{{ openjdk_package }}"
       state: present
 
-# Apache
+##### Apache #####
+
   - name: httpd packages
     yum:
       name:
@@ -53,16 +52,15 @@
     notify:
     - httpd service restart
 
-# This will stop SELinux from preventing access to self signed certs    
+# This will stop SELinux from preventing access to self signed certs
   - name: apply new SELinux to files
     command: restorecon -iR /etc/pki/tls/
 
-# This will stop SELinux from flagging Apache    
+# This will stop SELinux from flagging Apache
   - name: selinux CGI sockets
     seboolean: name=httpd_can_network_connect state=yes persistent=yes
 
-# This command will move files/httpd.conf to the remote host and put it in the apache conf.d directory    
-  - name: httpd config davenport
+  - name: copy midpoint.conf (Apache vhost config)
     template:
       src: files/httpd.conf
       dest: /etc/httpd/conf.d/midpoint.conf
@@ -74,9 +72,8 @@
     tags:
     - httpd
 
-# midPoint
+##### midPoint #####
 
-# Creates service account for midpoint to run as
   - name: creates service account
     user:
       name: "{{ service_account }}"
@@ -85,7 +82,6 @@
       system: yes
     when: service_account != 'root'
 
-# This download & extract midpoint if it doesn't exist
   - name: Extract & Download midpoint
     unarchive:
       src: "{{ midpoint_url }}"
@@ -95,16 +91,34 @@
       owner: "{{ service_account }}"
       group: "{{ service_account }}"
 
-# This will create midpoint.service file using the template
+  - name: Create config.xml to configure the database repository
+    template:
+      src: files/db_config.conf
+      dest: "/opt/midpoint-{{ midpoint_version }}/var/config.xml"
+      force: yes
+
+# If you are connecting an Oracle DB then you will need the ojdbc file from Oracle    
+#  - name: Copy ojdbc8.jar to midpoint/var
+#    copy:
+#      src: files/ojdbc8.jar
+#      dest: "/opt/midpoint-{{ midpoint_version }}/var/lib/ojdbc8.jar"
+
+# If you are using a custom schema .xsd file you can move it as shown below    
+#  - name: Copy customSchema.xsd to midpoint/var/schema/
+#    copy:
+#      src: files/customSchema.xsd
+#      dest: "/opt/midpoint-{{ midpoint_version }}/var/schema/customSchema.xsd"
+
   - name: Create systemd service file from template
     template:
       src: files/midpoint.service
       dest: /etc/systemd/system/midpoint.service
-
-# This will enable the midpoint service ensuring it automatically starts after a restart      
+     
   - name: midpoint service
     service: name=midpoint.service state=started enabled=true
-    
+  
+##### Handlers #####
+  
   handlers:
     - name: httpd service restart
       service: name=httpd state=restarted

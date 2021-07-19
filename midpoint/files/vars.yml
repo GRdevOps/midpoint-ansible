@@ -1,0 +1,13 @@
+#Define variables below
+openjdk_package: java-11-openjdk
+midpoint_url: https://evolveum.com/download/4-3-faraday/?wpdmdl=7418&ind=-Bc4x6rdqVuWF-m82SmZ9zSGT4gzU0Ti4fVvRyxZqQ5ItluUjvH92OTgw-F9g5Jfn2Xg6LtyItTlIiGHvsPRC6wvyyadEaopuXoEciIgBodNYL0QSgo_q72cq8Wafz4tmmm66sR0UqVlpdZTOpdFMUxjtWXv-CDqcI6ds2sayUc
+midpoint_version: 4.3
+service_account: midpoint
+httpd_cert: /etc/pki/tls/certs/localhost.crt
+httpd_key: /etc/pki/tls/private/localhost.key
+db_name: postgresql
+db_user: midpoint
+db_ip: 192.1.1.1
+db_userPassword: 5ecr3t
+# You should use ansible vault for passwords
+# https://docs.ansible.com/ansible/latest/user_guide/vault.html#storing-passwords-in-files
