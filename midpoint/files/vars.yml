@@ -7,7 +7,7 @@ httpd_cert: /etc/pki/tls/certs/localhost.crt
 httpd_key: /etc/pki/tls/private/localhost.key
 db_name: postgresql
 db_user: midpoint
-db_ip: 10.1.206.51
+db_ip: 192.1.1.1
 db_userPassword: 5ecr3t
 # You should use ansible vault for passwords
 # https://docs.ansible.com/ansible/latest/user_guide/vault.html#storing-passwords-in-files
