@@ -66,6 +66,13 @@
       force: yes
     notify:
     - postgresql service restart
+    
+  - name: hosts file
+    lineinfile:
+      dest: /var/lib/pgsql/data/pg_hba.conf
+      line: "host    all             all             {{ item }}           md5"
+    with_items:
+      - "{{ firewall_Vlans }}"
   
 # Postgresql DB init
     
