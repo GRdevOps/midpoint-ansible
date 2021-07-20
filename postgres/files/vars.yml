@@ -1,6 +1,6 @@
 #Define variables below
 postgres_vs: 13
-firewall_Vlans: ['10.1.206.1/24','192.1.1.1/22']
+firewall_Vlans: ['192.1.1.1/24','192.1.1.1/22']
 db_user: midpoint
 db_name: midpoint
 db_userPassword: 5ecr3t
